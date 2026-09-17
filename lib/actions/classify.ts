@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 
 /** Swap the model here — one line. */
-const MODEL = "anthropic/claude-sonnet-4.6";
+const MODEL = "z-ai/glm-5.3-flash";
 
 const Input = z.object({
   text: z.string().min(1).max(8000),
