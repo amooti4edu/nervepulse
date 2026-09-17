@@ -1,0 +1,116 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design system definition.
+ *
+ * The @theme inline block maps CSS custom properties to Tailwind utility
+ * classes (e.g. --color-primary -> bg-primary, text-primary).
+ *
+ * The :root block defines the actual color values using oklch.
+ * All colors MUST use oklch format.
+ *
+ * To add a new semantic color:
+ * 1. Add the variable to :root
+ * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-critical: var(--critical);
+  --color-critical-foreground: var(--critical-foreground);
+  --color-attention: var(--attention);
+  --color-attention-foreground: var(--attention-foreground);
+  --color-progress: var(--progress);
+  --color-progress-foreground: var(--progress-foreground);
+  --color-healthy: var(--healthy);
+  --color-healthy-foreground: var(--healthy-foreground);
+  --color-surface: var(--surface);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --font-sans: var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
+}
+
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.17 0.018 258);
+  --foreground: oklch(0.96 0.004 258);
+  --surface: oklch(0.21 0.019 258);
+  --card: oklch(0.215 0.019 258);
+  --card-foreground: oklch(0.96 0.004 258);
+  --popover: oklch(0.235 0.02 258);
+  --popover-foreground: oklch(0.96 0.004 258);
+  --primary: oklch(0.66 0.15 245);
+  --primary-foreground: oklch(0.16 0.02 258);
+  --secondary: oklch(0.27 0.02 258);
+  --secondary-foreground: oklch(0.95 0.004 258);
+  --muted: oklch(0.26 0.018 258);
+  --muted-foreground: oklch(0.68 0.02 258);
+  --accent: oklch(0.29 0.025 258);
+  --accent-foreground: oklch(0.96 0.004 258);
+  --destructive: oklch(0.6 0.21 25);
+  --destructive-foreground: oklch(0.98 0.005 258);
+  --border: oklch(0.3 0.02 258);
+  --input: oklch(0.3 0.02 258);
+  --ring: oklch(0.66 0.15 245);
+  --critical: oklch(0.62 0.21 25);
+  --critical-foreground: oklch(0.98 0.005 258);
+  --attention: oklch(0.76 0.15 78);
+  --attention-foreground: oklch(0.2 0.02 78);
+  --progress: oklch(0.66 0.15 245);
+  --progress-foreground: oklch(0.16 0.02 258);
+  --healthy: oklch(0.7 0.15 155);
+  --healthy-foreground: oklch(0.18 0.02 155);
+  --chart-1: oklch(0.66 0.15 245);
+  --chart-2: oklch(0.7 0.15 155);
+  --chart-3: oklch(0.76 0.15 78);
+  --chart-4: oklch(0.62 0.21 25);
+  --chart-5: oklch(0.68 0.12 300);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
