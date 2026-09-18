@@ -25,6 +25,8 @@ import {
   type SignalStatus,
 } from "@/lib/signals";
 import { cn } from "@/lib/utils";
+import { AttachmentPicker } from "@/components/AttachmentPicker";
+import { getAttachmentUrl } from "@/lib/attachments";
 
 type Ref = { id: string; name: string } | null;
 type PersonRef = { id: string; full_name: string } | null;
@@ -600,7 +602,7 @@ export function SignalDetailView({ signalId }: { signalId: string }) {
           <SectionCard title={`Related signals · ${relationships?.length ?? 0}`}>
             {(relationships ?? []).length === 0 ? (
               <p className="px-3 py-4 text-sm text-muted-foreground">
-                Not linked to anything yet. Use “Link signal” above to connect causes, responses and follow-ups.
+                Not linked to anything yet. Use "Link signal" above to connect causes, responses and follow-ups.
               </p>
             ) : (
               <ul>
@@ -664,7 +666,7 @@ export function SignalDetailView({ signalId }: { signalId: string }) {
                         {f.to_person?.full_name ?? f.to_space?.name ?? "—"}
                       </span>
                     </p>
-                    {f.note && <p className="mt-0.5 text-xs text-muted-foreground">“{f.note}”</p>}
+                    {f.note && <p className="mt-0.5 text-xs text-muted-foreground">"{f.note}"</p>}
                     <p className="tabular mt-0.5 text-[11px] text-muted-foreground">
                       {timeAgo(f.created_at)}
                     </p>
@@ -681,11 +683,34 @@ export function SignalDetailView({ signalId }: { signalId: string }) {
               <ul className="px-3 py-2">
                 {attachments!.map((a) => (
                   <li key={a.id} className="flex items-center gap-2 py-1 text-sm">
-                    <Paperclip className="size-3.5 text-muted-foreground" />
-                    <span className="min-w-0 flex-1 truncate">{a.file_name}</span>
+                    <Paperclip className="size-3.5 shrink-0 text-muted-foreground" />
+                    <button
+                      onClick={async () => {
+                        try {
+                          const url = await getAttachmentUrl(a.storage_path);
+                          window.open(url, "_blank", "noopener,noreferrer");
+                        } catch (err) {
+                          toast.error(err instanceof Error ? err.message : "Couldn't open file");
+                        }
+                      }}
+                      className="min-w-0 flex-1 truncate text-left hover:underline"
+                    >
+                      {a.file_name}
+                    </button>
                   </li>
                 ))}
               </ul>
+            )}
+            {canEdit && (
+              <div className="border-t border-border p-3">
+                <AttachmentPicker
+                  signalId={signal.id}
+                  {...(userId ? { uploadedBy: userId } : {})}
+                  onUploaded={() =>
+                    void qc.invalidateQueries({ queryKey: ["signal", signalId, "attachments"] })
+                  }
+                />
+              </div>
             )}
           </SectionCard>
         </div>

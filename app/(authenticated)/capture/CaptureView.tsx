@@ -15,6 +15,7 @@ import {
   type SignalType,
 } from "@/lib/signals";
 import { classifySignal } from "@/lib/actions/classify";
+import { AttachmentPicker, uploadPendingFiles, type PendingFile } from "@/components/AttachmentPicker";
 import { cn } from "@/lib/utils";
 
 type Draft = {
@@ -33,6 +34,7 @@ export function CaptureView() {
 
   const [text, setText] = useState("");
   const [mentions, setMentions] = useState<MentionEntity[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [aiMode, setAiMode] = useState(false);
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -70,6 +72,17 @@ export function CaptureView() {
       return;
     }
     await persistMentions(data.id, mentions);
+    if (pendingFiles.length > 0) {
+      try {
+        await uploadPendingFiles(pendingFiles, data.id, userId);
+      } catch (err) {
+        toast.error(
+          err instanceof Error
+            ? `Signal saved, but an attachment failed: ${err.message}`
+            : "Signal saved, but an attachment failed to upload.",
+        );
+      }
+    }
     toast.success("Signal captured");
     router.push(`/signals/${data.id}`);
   }
@@ -145,6 +158,8 @@ export function CaptureView() {
         rows={6}
         placeholder="What happened? Type @ to tag a person, branch or department…"
       />
+
+      <AttachmentPicker onPendingChange={setPendingFiles} />
 
       <div className="flex gap-2">
         {aiMode ? (
