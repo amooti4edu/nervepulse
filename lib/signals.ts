@@ -41,15 +41,6 @@ export const SPACE_KINDS: SpaceKind[] = [
 
 export const ORG_ROLES: OrgRole[] = ["owner", "admin", "manager", "employee"];
 
-/** open -> acknowledged -> in_progress -> resolved -> closed, resolved -> open reopens. */
-export const STATUS_TRANSITIONS: Record<SignalStatus, SignalStatus[]> = {
-  open: ["acknowledged"],
-  acknowledged: ["in_progress"],
-  in_progress: ["resolved"],
-  resolved: ["closed", "open"],
-  closed: [],
-};
-
 export const RELATIONSHIP_LABEL: Record<RelationshipKind, string> = {
   caused_by: "caused by",
   responds_to: "responds to",

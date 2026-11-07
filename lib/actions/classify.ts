@@ -2,9 +2,7 @@
 
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
-
-/** Swap the model here — one line. */
-const MODEL = "z-ai/glm-5.3-flash";
+import { getOpenRouterModel } from "@/lib/ai-config";
 
 const Input = z.object({
   text: z.string().min(1).max(8000),
@@ -57,7 +55,7 @@ export async function classifySignal(input: z.infer<typeof Input>) {
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: MODEL,
+      model: getOpenRouterModel(),
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: data.text },

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { isInformational } from "@/lib/workflow";
 import {
   labelize,
   priorityTone,
@@ -32,12 +33,27 @@ export function Pill({
   );
 }
 
-export function StatusBadge({ status }: { status: SignalStatus }) {
-  const tone = statusTone(status);
+export function StatusBadge({
+  status,
+  type,
+}: {
+  status: SignalStatus;
+  type?: SignalType;
+}) {
+  const informational = type ? isInformational(type) : false;
+  const tone = informational
+    ? status === "closed"
+      ? "muted"
+      : "progress"
+    : statusTone(status);
   return (
     <Pill tone={tone}>
       <span className={cn("size-1.5 rounded-full", toneDot[tone])} />
-      {labelize(status)}
+      {informational
+        ? status === "closed"
+          ? "Archived"
+          : "Published"
+        : labelize(status)}
     </Pill>
   );
 }

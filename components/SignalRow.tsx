@@ -12,17 +12,21 @@ export function SignalRow({
   return (
     <Link
       href={`/signals/${signal.id}`}
-      className="block border-b border-border px-3 py-2.5 transition-colors last:border-b-0 hover:bg-accent/50"
+      className="group block border-b border-border/70 px-5 py-4 transition-colors last:border-b-0 hover:bg-accent/40"
     >
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-foreground">{signal.title}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <p className="truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary">
+            {signal.title}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <TypeBadge type={signal.type} />
-            <StatusBadge status={signal.status} />
+            <StatusBadge status={signal.status} type={signal.type} />
             <PriorityBadge priority={signal.priority} />
             {spaceName && (
-              <span className="text-[11px] text-muted-foreground">{spaceName}</span>
+              <span className="text-[11px] text-muted-foreground">
+                {spaceName}
+              </span>
             )}
           </div>
         </div>
@@ -44,9 +48,9 @@ export function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-border bg-card">
-      <header className="flex items-center justify-between border-b border-border px-3 py-2">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+    <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+        <h2 className="text-sm font-semibold tracking-tight text-foreground">
           {title}
         </h2>
         {action}

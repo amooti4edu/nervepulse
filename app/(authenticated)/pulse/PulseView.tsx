@@ -4,7 +4,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { AlertTriangle, CheckCircle2, Inbox, Radio } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  ArrowUpRight,
+  CheckCircle2,
+  Inbox,
+  Layers3,
+  Plus,
+  Radio,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { SectionCard, SignalRow } from "@/components/SignalRow";
 import { useMembership, useSignalsRealtime, useSpaces } from "@/lib/useOrg";
@@ -28,7 +37,7 @@ export function PulseView() {
     void qc.invalidateQueries({ queryKey: ["recent-signals"] });
   });
 
-  const { data: counts } = useQuery({
+  const counts = useQuery({
     queryKey: ["pulse", orgId],
     enabled: !!orgId,
     queryFn: async () => {
@@ -41,8 +50,7 @@ export function PulseView() {
       return data;
     },
   });
-
-  const { data: health } = useQuery({
+  const health = useQuery({
     queryKey: ["space-health", orgId],
     enabled: !!orgId,
     queryFn: async () => {
@@ -55,8 +63,7 @@ export function PulseView() {
       return data;
     },
   });
-
-  const { data: recent } = useQuery({
+  const recent = useQuery({
     queryKey: ["recent-signals", orgId],
     enabled: !!orgId,
     queryFn: async () => {
@@ -71,33 +78,31 @@ export function PulseView() {
     },
   });
 
-  const spaceName = (id: string) => spaces?.find((s) => s.id === id)?.name;
-
   const tiles = [
     {
       label: "Critical open",
-      value: counts?.critical_open ?? 0,
+      value: counts.data?.critical_open ?? 0,
       tone: "critical",
       icon: AlertTriangle,
       search: { status: "open", priority: "critical" },
     },
     {
       label: "Pending requests",
-      value: counts?.pending_requests ?? 0,
+      value: counts.data?.pending_requests ?? 0,
       tone: "attention",
       icon: Inbox,
       search: { type: "request", status: "open" },
     },
     {
       label: "Recent updates",
-      value: counts?.recent_updates ?? 0,
+      value: counts.data?.recent_updates ?? 0,
       tone: "progress",
       icon: Radio,
       search: { type: "update" },
     },
     {
       label: "Recently completed",
-      value: counts?.recently_completed ?? 0,
+      value: counts.data?.recently_completed ?? 0,
       tone: "healthy",
       icon: CheckCircle2,
       search: { status: "resolved" },
@@ -105,79 +110,169 @@ export function PulseView() {
   ] as const;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-end justify-between">
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Company Pulse</h1>
-          <p className="text-xs text-muted-foreground">
-            Live across {membership?.organizations?.name ?? "your organization"}
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
+            The big picture
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            Company pulse<span className="text-primary">.</span>
+          </h1>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            Less noise. More clarity. Here’s what’s happening across{" "}
+            {membership?.organizations?.name ?? "your organization"}.
           </p>
         </div>
         <Link
-          href="/capture"
-          className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+          href="/signals"
+          className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
         >
-          Capture
+          Explore signals <ArrowUpRight className="size-3.5" />
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {tiles.map((t) => (
+      <div className="relative overflow-hidden rounded-2xl border border-primary/15 bg-accent/60 p-6 sm:p-8">
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 400 180"
+          fill="none"
+          className="pointer-events-none absolute -right-12 top-0 hidden h-full w-96 text-primary/15 lg:block"
+        >
+          <circle cx="240" cy="90" r="55" stroke="currentColor" />
+          <circle cx="240" cy="90" r="90" stroke="currentColor" />
+          <circle cx="240" cy="90" r="125" stroke="currentColor" />
+          <path
+            d="M0 95h110l20-22 24 52 27-87 28 104 25-47h166"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinejoin="round"
+          />
+          <circle cx="234" cy="95" r="5" fill="currentColor" />
+        </svg>
+        <div className="relative max-w-lg">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+            Connected teams. Clearer decisions.
+          </p>
+          <h2 className="mt-3 text-xl font-medium tracking-tight sm:text-2xl">
+            Every signal tells a story.
+          </h2>
+          <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Surface what matters, keep work moving, and give your team the
+            context to act.
+          </p>
           <Link
-            key={t.label}
-            href={`/signals?${new URLSearchParams(t.search).toString()}`}
+            href="/capture"
+            className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+          >
+            <Plus className="size-4" />
+            Capture a signal
+            <ArrowRight className="ml-1 size-4" />
+          </Link>
+        </div>
+      </div>
+
+      {counts.isError && (
+        <DashboardError onRetry={() => void counts.refetch()} />
+      )}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        {tiles.map((tile) => (
+          <Link
+            key={tile.label}
+            href={`/signals?${new URLSearchParams(tile.search).toString()}`}
             className={cn(
-              "rounded-xl border bg-card p-3 transition-colors hover:bg-accent/40",
-              t.tone === "critical" && "border-critical/40",
-              t.tone === "attention" && "border-attention/40",
-              t.tone === "progress" && "border-progress/40",
-              t.tone === "healthy" && "border-healthy/40",
+              "group rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:-translate-y-1 hover:border-primary/30 hover:shadow-md motion-reduce:transform-none sm:p-5",
+              toneText[tile.tone],
             )}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                {t.label}
+              <span className="flex size-10 items-center justify-center rounded-xl bg-muted/70">
+                <tile.icon className="size-5" />
               </span>
-              <t.icon className={cn("size-4", toneText[t.tone])} />
+              <ArrowUpRight className="size-4 text-muted-foreground/50 transition-colors group-hover:text-primary" />
             </div>
-            <p className={cn("tabular mt-2 text-3xl font-semibold", toneText[t.tone])}>
-              {t.value}
+            <p
+              className="tabular mt-5 text-4xl font-semibold tracking-tight text-foreground"
+              aria-label={
+                counts.isPending
+                  ? "Loading"
+                  : counts.isError
+                    ? "Unavailable"
+                    : undefined
+              }
+            >
+              {counts.isPending || counts.isError ? "—" : tile.value}
+            </p>
+            <p className="mt-2 text-xs font-medium text-muted-foreground">
+              {tile.label}
             </p>
           </Link>
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <SectionCard title="Space health">
-          {(health ?? []).length === 0 ? (
-            <p className="px-3 py-6 text-sm text-muted-foreground">No spaces yet.</p>
+      <div className="grid items-start gap-6 xl:grid-cols-[0.85fr_1.15fr]">
+        <SectionCard
+          title="Space health"
+          action={<Layers3 className="size-4 text-muted-foreground" />}
+        >
+          {health.isPending ? (
+            <DashboardLoading />
+          ) : health.isError ? (
+            <DashboardError onRetry={() => void health.refetch()} />
+          ) : !health.data?.length ? (
+            <div className="px-6 py-10 text-center">
+              <Layers3 className="mx-auto mb-3 size-7 text-primary/60" />
+              <p className="text-sm font-medium">Make room for your teams</p>
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                Spaces bring signals from each branch and department together.
+              </p>
+              <Link
+                href="/settings"
+                className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-primary"
+              >
+                Set up a space <ArrowRight className="size-3.5" />
+              </Link>
+            </div>
           ) : (
             <ul>
-              {health!.map((s) => {
-                const attention = s.attention_count ?? 0;
+              {health.data.map((space) => {
+                const attention = space.attention_count ?? 0;
                 return (
-                  <li key={s.space_id}>
+                  <li
+                    key={space.space_id}
+                    className="border-b border-border/70 last:border-b-0"
+                  >
                     <Link
-                      href={`/spaces/${s.space_id}`}
-                      className="flex items-center gap-3 border-b border-border px-3 py-2.5 last:border-b-0 hover:bg-accent/50"
+                      href={`/spaces/${space.space_id}`}
+                      className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-accent/40"
                     >
                       <span
                         className={cn(
-                          "size-2 rounded-full",
+                          "size-2.5 shrink-0 rounded-full",
                           attention > 0 ? "bg-critical" : "bg-healthy",
                         )}
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{s.name}</p>
-                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                          {labelize(s.kind ?? "")}
+                        <p className="truncate text-sm font-medium">
+                          {space.name}
+                        </p>
+                        <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                          {labelize(space.kind ?? "")}
                         </p>
                       </div>
                       <div className="tabular text-right text-xs">
-                        <p className={attention > 0 ? "text-critical" : "text-healthy"}>
-                          {attention > 0 ? `${attention} need attention` : "healthy"}
+                        <p
+                          className={
+                            attention > 0 ? "text-critical" : "text-healthy"
+                          }
+                        >
+                          {attention > 0
+                            ? `${attention} need attention`
+                            : "Healthy"}
                         </p>
-                        <p className="text-muted-foreground">{s.open_count ?? 0} open</p>
+                        <p className="mt-1 text-muted-foreground">
+                          {space.open_count ?? 0} open
+                        </p>
                       </div>
                     </Link>
                   </li>
@@ -186,26 +281,87 @@ export function PulseView() {
             </ul>
           )}
         </SectionCard>
-
         <SectionCard
           title="Recent activity"
           action={
-            <Link href="/signals" className="text-xs text-primary hover:underline">
-              View all
+            <Link
+              href="/signals"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+            >
+              View all <ArrowRight className="size-3.5" />
             </Link>
           }
         >
-          {(recent ?? []).length === 0 ? (
-            <p className="px-3 py-6 text-sm text-muted-foreground">
-              No signals yet — capture the first one.
-            </p>
+          {recent.isPending ? (
+            <DashboardLoading />
+          ) : recent.isError ? (
+            <DashboardError onRetry={() => void recent.refetch()} />
+          ) : !recent.data?.length ? (
+            <div className="px-6 py-10 text-center">
+              <Radio className="mx-auto mb-3 size-7 text-primary/60" />
+              <p className="text-sm font-medium">
+                Your next update starts here
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                Capture an issue, request, or win to get the conversation going.
+              </p>
+              <Link
+                href="/capture"
+                className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-primary"
+              >
+                Capture your first signal <ArrowRight className="size-3.5" />
+              </Link>
+            </div>
           ) : (
-            recent!.map((s) => (
-              <SignalRow key={s.id} signal={s} spaceName={spaceName(s.space_id)} />
+            recent.data.map((signal) => (
+              <SignalRow
+                key={signal.id}
+                signal={signal}
+                spaceName={
+                  spaces?.find((space) => space.id === signal.space_id)?.name
+                }
+              />
             ))
           )}
         </SectionCard>
       </div>
+    </div>
+  );
+}
+
+function DashboardLoading() {
+  return (
+    <div role="status" className="space-y-4 p-6">
+      <span className="sr-only">Loading dashboard data</span>
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="flex animate-pulse items-center gap-3 motion-reduce:animate-none"
+        >
+          <div className="size-9 rounded-xl bg-muted" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 w-2/3 rounded bg-muted" />
+            <div className="h-2 w-1/3 rounded bg-muted" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DashboardError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div
+      role="alert"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-critical/5 p-5 text-sm text-critical"
+    >
+      <span>We couldn’t load this data.</span>
+      <button
+        onClick={onRetry}
+        className="font-medium underline underline-offset-4"
+      >
+        Try again
+      </button>
     </div>
   );
 }

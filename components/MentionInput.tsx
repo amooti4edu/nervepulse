@@ -18,7 +18,9 @@ type Props = {
   onMentionsChange: (mentions: MentionEntity[]) => void;
   organizationId?: string;
   placeholder?: string;
+  "aria-label"?: string;
   rows?: number;
+  disabled?: boolean;
   className?: string;
 };
 
@@ -48,7 +50,9 @@ export function MentionInput({
   onMentionsChange,
   organizationId,
   placeholder,
+  "aria-label": ariaLabel = "Message",
   rows = 4,
+  disabled = false,
   className,
 }: Props) {
   const entities = useMentionables(organizationId);
@@ -59,11 +63,16 @@ export function MentionInput({
   const matches = useMemo(() => {
     if (query === null) return [];
     const q = query.toLowerCase();
-    return entities.filter((e) => e.label.toLowerCase().includes(q)).slice(0, 8);
+    return entities
+      .filter((e) => e.label.toLowerCase().includes(q))
+      .slice(0, 8);
   }, [query, entities]);
 
   function handleChange(next: string, position: number) {
     onChange(next);
+    onMentionsChange(
+      mentions.filter((mention) => next.includes(`@${mention.label}`)),
+    );
     setCaret(position);
     const before = next.slice(0, position);
     const match = /@([\w'-]*)$/.exec(before);
@@ -71,7 +80,9 @@ export function MentionInput({
   }
 
   function select(entity: MentionEntity) {
-    const before = value.slice(0, caret).replace(/@([\w'-]*)$/, `@${entity.label} `);
+    const before = value
+      .slice(0, caret)
+      .replace(/@([\w'-]*)$/, `@${entity.label} `);
     const next = before + value.slice(caret);
     onChange(next);
     setQuery(null);
@@ -85,10 +96,14 @@ export function MentionInput({
     <div className={cn("relative", className)}>
       <textarea
         ref={ref}
+        aria-label={ariaLabel}
         rows={rows}
+        disabled={disabled}
         value={value}
         placeholder={placeholder}
-        onChange={(e) => handleChange(e.target.value, e.target.selectionStart ?? 0)}
+        onChange={(e) =>
+          handleChange(e.target.value, e.target.selectionStart ?? 0)
+        }
         onKeyDown={(e) => {
           if (e.key === "Escape") setQuery(null);
         }}
@@ -100,10 +115,9 @@ export function MentionInput({
             <li key={`${m.entity_type}-${m.entity_id}`}>
               <button
                 type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  select(m);
-                }}
+                disabled={disabled}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => select(m)}
                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent"
               >
                 {m.entity_type === "space" ? (
@@ -132,10 +146,13 @@ export function MentionInput({
               <button
                 type="button"
                 onClick={() =>
-                  onMentionsChange(mentions.filter((x) => x.entity_id !== m.entity_id))
+                  onMentionsChange(
+                    mentions.filter((x) => x.entity_id !== m.entity_id),
+                  )
                 }
                 className="opacity-70 hover:opacity-100"
                 aria-label={`Remove ${m.label}`}
+                disabled={disabled}
               >
                 <X className="size-3" />
               </button>
@@ -147,21 +164,59 @@ export function MentionInput({
   );
 }
 
-/** Writes @-mentions into signal_participants for a signal. */
-export async function persistMentions(signalId: string, mentions: MentionEntity[]) {
+/** Add participants once; record each personal mention as a notification event. */
+export async function persistMentions(
+  signalId: string,
+  mentions: MentionEntity[],
+  commentId?: string,
+) {
   if (mentions.length === 0) return;
-  const rows = mentions.map((m) => ({
-    signal_id: signalId,
-    person_id: m.entity_type === "person" ? m.entity_id : null,
-    space_id: m.entity_type === "space" ? m.entity_id : null,
-    role: "participant",
-  }));
-  await supabase.from("signal_participants").insert(rows);
-  const people = mentions.filter((m) => m.entity_type === "person");
-  if (people.length > 0) {
-    await supabase.from("notifications").insert(
-      people.map((p) => ({ person_id: p.entity_id, signal_id: signalId, kind: "mention" })),
+  const unique = [
+    ...new Map(
+      mentions.map((m) => [`${m.entity_type}:${m.entity_id}`, m]),
+    ).values(),
+  ];
+  const { data: existing, error: lookupError } = await supabase
+    .from("signal_participants")
+    .select("person_id, space_id")
+    .eq("signal_id", signalId);
+  if (lookupError) throw lookupError;
+  const missing = unique.filter(
+    (m) =>
+      !existing.some((p) =>
+        m.entity_type === "person"
+          ? p.person_id === m.entity_id
+          : p.space_id === m.entity_id,
+      ),
+  );
+  if (missing.length) {
+    const { error } = await supabase.from("signal_participants").insert(
+      missing.map((m) => ({
+        signal_id: signalId,
+        person_id: m.entity_type === "person" ? m.entity_id : null,
+        space_id: m.entity_type === "space" ? m.entity_id : null,
+        role: "participant",
+      })),
     );
+    if (error && error.code !== "23505") throw error;
+  }
+  const people = unique.filter((m) => m.entity_type === "person");
+  if (people.length) {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user)
+      throw authError ?? new Error("Please sign in again.");
+    const { error } = await supabase.from("signal_mentions").insert(
+      people.map((person) => ({
+        signal_id: signalId,
+        person_id: person.entity_id,
+        mentioned_by: user.id,
+        comment_id: commentId ?? null,
+      })),
+    );
+    if (error) throw error;
   }
 }
 

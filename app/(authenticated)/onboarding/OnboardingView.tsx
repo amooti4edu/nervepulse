@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Loader2, Plus, Trash2 } from "lucide-react";
@@ -19,8 +20,6 @@ export function OnboardingView() {
   const [orgId, setOrgId] = useState<string | null>(null);
   const [rootSpaceId, setRootSpaceId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Draft[]>([{ name: "", kind: "branch" }]);
-  const [invites, setInvites] = useState<string[]>([]);
-  const [inviteInput, setInviteInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +27,9 @@ export function OnboardingView() {
     setBusy(true);
     setError(null);
     try {
-      const { data, error } = await supabase.rpc("create_organization", { org_name: orgName });
+      const { data, error } = await supabase.rpc("create_organization", {
+        org_name: orgName,
+      });
       if (error) throw error;
       setOrgId(data as string);
       const { data: root } = await supabase
@@ -42,7 +43,9 @@ export function OnboardingView() {
       await qc.invalidateQueries({ queryKey: ["membership"] });
       setStep(2);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create organization");
+      setError(
+        err instanceof Error ? err.message : "Could not create organization",
+      );
     } finally {
       setBusy(false);
     }
@@ -81,10 +84,10 @@ export function OnboardingView() {
           {membership.organizations?.name} is live. Manage it in Settings.
         </p>
         <button
-          onClick={() => router.push("/pulse")}
+          onClick={() => router.push("/inbox")}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
         >
-          Go to Company Pulse
+          Go to my inbox
         </button>
       </div>
     );
@@ -99,6 +102,23 @@ export function OnboardingView() {
       {step === 1 && (
         <div className="mt-3 space-y-4">
           <h1 className="text-xl font-semibold">Name your organization</h1>
+          <p className="rounded-xl border border-primary/15 bg-accent/40 p-4 text-sm leading-relaxed text-muted-foreground">
+            <strong className="text-foreground">
+              Joining an existing team?
+            </strong>{" "}
+            Don’t create a second organization. Ask your administrator to add
+            your registered email in Settings, then{" "}
+            <button
+              onClick={() =>
+                void qc.invalidateQueries({ queryKey: ["membership"] })
+              }
+              className="font-medium text-primary underline"
+            >
+              check my access again
+            </button>
+            . Create an organization below only if you’re setting up a new
+            workspace.
+          </p>
           <input
             value={orgName}
             onChange={(e) => setOrgName(e.target.value)}
@@ -118,14 +138,20 @@ export function OnboardingView() {
 
       {step === 2 && (
         <div className="mt-3 space-y-4">
-          <h1 className="text-xl font-semibold">Add your branches & departments</h1>
+          <h1 className="text-xl font-semibold">
+            Add your branches & departments
+          </h1>
           <div className="space-y-2">
             {drafts.map((d, i) => (
               <div key={i} className="flex gap-2">
                 <input
                   value={d.name}
                   onChange={(e) =>
-                    setDrafts(drafts.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
+                    setDrafts(
+                      drafts.map((x, j) =>
+                        j === i ? { ...x, name: e.target.value } : x,
+                      ),
+                    )
                   }
                   placeholder="Name"
                   className="flex-1 rounded-lg border border-input bg-surface px-3 py-2 text-sm outline-none focus:border-ring"
@@ -135,7 +161,9 @@ export function OnboardingView() {
                   onChange={(e) =>
                     setDrafts(
                       drafts.map((x, j) =>
-                        j === i ? { ...x, kind: e.target.value as SpaceKind } : x,
+                        j === i
+                          ? { ...x, kind: e.target.value as SpaceKind }
+                          : x,
                       ),
                     )
                   }
@@ -176,50 +204,45 @@ export function OnboardingView() {
 
       {step === 3 && (
         <div className="mt-3 space-y-4">
-          <h1 className="text-xl font-semibold">Invite your team</h1>
-          <p className="text-sm text-muted-foreground">
-            Collect the emails now — they&apos;ll appear in Settings so you can send invites once
-            email delivery is switched on.
-          </p>
-          <div className="flex gap-2">
-            <input
-              value={inviteInput}
-              onChange={(e) => setInviteInput(e.target.value)}
-              placeholder="name@company.com"
-              className="flex-1 rounded-lg border border-input bg-surface px-3 py-2 text-sm outline-none focus:border-ring"
-            />
-            <button
-              onClick={() => {
-                if (inviteInput.includes("@")) {
-                  setInvites([...invites, inviteInput.trim()]);
-                  setInviteInput("");
-                }
-              }}
-              className="rounded-lg border border-border px-3 text-sm"
+          <h1 className="text-xl font-semibold">
+            Bring your team into the loop
+          </h1>
+          <div className="space-y-3 rounded-xl border border-border bg-card p-5 text-sm leading-relaxed text-muted-foreground">
+            <p>
+              Email invitations aren’t enabled yet. No invitations have been
+              sent.
+            </p>
+            <ol className="list-decimal space-y-2 pl-4">
+              <li>
+                Ask teammates to create an account using your app’s sign-up
+                page.
+              </li>
+              <li>
+                Open Settings and add each registered person by email, then
+                choose their role and primary space.
+              </li>
+              <li>
+                Start with a signal: mention someone for attention, forward for
+                input, or assign responsibility.
+              </li>
+            </ol>
+            <Link
+              href="/settings"
+              className="inline-flex font-medium text-primary underline"
             >
-              Add
-            </button>
+              Open team settings
+            </Link>
           </div>
-          {invites.length > 0 && (
-            <ul className="space-y-1 rounded-lg border border-border bg-card p-2 text-sm">
-              {invites.map((e, i) => (
-                <li key={i} className="flex items-center justify-between px-1 py-0.5">
-                  {e}
-                  <button
-                    onClick={() => setInvites(invites.filter((_, j) => j !== i))}
-                    className="text-muted-foreground hover:text-critical"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Your inbox shows work assigned to you and requests for input.
+            Company Pulse shows the bigger picture. Both stay available in
+            navigation.
+          </p>
           <button
-            onClick={() => router.push("/pulse")}
+            onClick={() => router.push("/inbox")}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
           >
-            Finish setup
+            Finish setup &amp; open my inbox
           </button>
         </div>
       )}

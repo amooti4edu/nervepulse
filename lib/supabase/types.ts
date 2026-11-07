@@ -14,8 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      signal_followers: {
+        Row: { signal_id: string; person_id: string; created_at: string }
+        Insert: { signal_id: string; person_id: string; created_at?: string }
+        Update: { signal_id?: string; person_id?: string; created_at?: string }
+        Relationships: [{
+          foreignKeyName: "signal_followers_signal_id_fkey"
+          columns: ["signal_id"]
+          isOneToOne: false
+          referencedRelation: "signals"
+          referencedColumns: ["id"]
+        }]
+      }
+      signal_mentions: {
+        Row: { id: string; signal_id: string; person_id: string; mentioned_by: string; comment_id: string | null; created_at: string }
+        Insert: { id?: string; signal_id: string; person_id: string; mentioned_by: string; comment_id?: string | null; created_at?: string }
+        Update: { id?: string; signal_id?: string; person_id?: string; mentioned_by?: string; comment_id?: string | null; created_at?: string }
+        Relationships: []
+      }
       notifications: {
         Row: {
+          comment_id: string | null
           created_at: string
           id: string
           kind: string
@@ -24,6 +43,7 @@ export type Database = {
           signal_id: string | null
         }
         Insert: {
+          comment_id?: string | null
           created_at?: string
           id?: string
           kind: string
@@ -32,6 +52,7 @@ export type Database = {
           signal_id?: string | null
         }
         Update: {
+          comment_id?: string | null
           created_at?: string
           id?: string
           kind?: string

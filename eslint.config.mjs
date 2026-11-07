@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated eve assistant runtime bundles, not authored application code.
+    ".eve/**",
   ]),
 ]);
 
